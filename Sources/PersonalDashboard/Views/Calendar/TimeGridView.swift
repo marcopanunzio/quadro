@@ -10,6 +10,7 @@ struct TimeGridView: View {
     private static let scrollAnchorID = "time-grid-0730"
 
     @Environment(AppModel.self) private var model
+    @Environment(\.isSnapshot) private var isSnapshot
     @Environment(\.palette) private var palette
 
     @State private var newEventDraft: NewEventDraft?
@@ -74,42 +75,54 @@ struct TimeGridView: View {
 
     @ViewBuilder
     private func scrollableGrid(days: [DayDate], columnWidth: CGFloat, totalWidth: CGFloat) -> some View {
-        ScrollViewReader { scrollProxy in
-            ScrollView(.vertical) {
-                ZStack(alignment: .topLeading) {
-                    HStack(spacing: 0) {
-                        gutterColumn
-                        daysArea(days: days, columnWidth: columnWidth)
-                    }
-                    AllBlocksLayer(
-                        days: days,
-                        columnWidth: columnWidth,
-                        gutterWidth: gutterWidth,
-                        geometry: geometry,
-                        showLocation: days.count == 1,
-                        onCommitChange: requestChange
-                    )
-                    ForEach(days.filter { $0 == model.today }, id: \.self) { day in
-                        currentTimeLine(day: day, dayIndex: days.firstIndex(of: day) ?? 0, columnWidth: columnWidth)
-                    }
-                    if let draft = newEventDraft {
-                        newEventGhost(draft, columnWidth: columnWidth)
-                    }
-                    Color.clear
-                        .frame(width: 1, height: 1)
-                        .id(Self.scrollAnchorID)
-                        .position(x: 0, y: 7.5 * hourHeight)
+        if isSnapshot {
+            // ImageRenderer non disegna le ScrollView: si mostra la griglia già spostata alle 7:30.
+            gridContent(days: days, columnWidth: columnWidth, totalWidth: totalWidth)
+                .offset(y: -7.5 * hourHeight)
+                .frame(maxHeight: .infinity, alignment: .top)
+                .clipped()
+        } else {
+            ScrollViewReader { scrollProxy in
+                ScrollView(.vertical) {
+                    gridContent(days: days, columnWidth: columnWidth, totalWidth: totalWidth)
                 }
-                .frame(width: totalWidth, height: geometry.totalHeight, alignment: .topLeading)
-            }
-            .onAppear {
-                guard !didSetInitialScroll else { return }
-                didSetInitialScroll = true
-                DispatchQueue.main.async {
-                    scrollProxy.scrollTo(Self.scrollAnchorID, anchor: .top)
+                .onAppear {
+                    guard !didSetInitialScroll else { return }
+                    didSetInitialScroll = true
+                    DispatchQueue.main.async {
+                        scrollProxy.scrollTo(Self.scrollAnchorID, anchor: .top)
+                    }
                 }
             }
         }
+    }
+
+    private func gridContent(days: [DayDate], columnWidth: CGFloat, totalWidth: CGFloat) -> some View {
+        ZStack(alignment: .topLeading) {
+            HStack(spacing: 0) {
+                gutterColumn
+                daysArea(days: days, columnWidth: columnWidth)
+            }
+            AllBlocksLayer(
+                days: days,
+                columnWidth: columnWidth,
+                gutterWidth: gutterWidth,
+                geometry: geometry,
+                showLocation: days.count == 1,
+                onCommitChange: requestChange
+            )
+            ForEach(days.filter { $0 == model.today }, id: \.self) { day in
+                currentTimeLine(day: day, dayIndex: days.firstIndex(of: day) ?? 0, columnWidth: columnWidth)
+            }
+            if let draft = newEventDraft {
+                newEventGhost(draft, columnWidth: columnWidth)
+            }
+            Color.clear
+                .frame(width: 1, height: 1)
+                .id(Self.scrollAnchorID)
+                .position(x: 0, y: 7.5 * hourHeight)
+        }
+        .frame(width: totalWidth, height: geometry.totalHeight, alignment: .topLeading)
     }
 
     private var gutterColumn: some View {
@@ -149,11 +162,11 @@ struct TimeGridView: View {
         .frame(width: columnWidth, height: geometry.totalHeight, alignment: .topLeading)
         .overlay(alignment: .leading) { Rectangle().fill(palette.ui).frame(width: 1) }
         .contentShape(Rectangle())
-        .dropDestination(for: String.self) { items, location in
+        .liveOnly { $0.dropDestination(for: String.self) { items, location in
             handleTaskDrop(items: items, day: day, location: location)
         } isTargeted: { targeted in
             dropTargetDay = targeted ? day : (dropTargetDay == day ? nil : dropTargetDay)
-        }
+        } }
     }
 
     private var hourLines: some View {

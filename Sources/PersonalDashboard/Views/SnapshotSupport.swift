@@ -33,3 +33,20 @@ struct SnapshotFriendlyScrollView<Content: View>: View {
         }
     }
 }
+
+/// Applica `transform` solo fuori dagli snapshot (es. `dropDestination`, che ImageRenderer non sa disegnare).
+struct LiveOnly<Base: View, Output: View>: View {
+    @Environment(\.isSnapshot) private var isSnapshot
+    let base: Base
+    let transform: (Base) -> Output
+
+    var body: some View {
+        if isSnapshot { base } else { transform(base) }
+    }
+}
+
+extension View {
+    func liveOnly<Output: View>(_ transform: @escaping (Self) -> Output) -> some View {
+        LiveOnly(base: self, transform: transform)
+    }
+}

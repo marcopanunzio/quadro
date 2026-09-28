@@ -135,7 +135,7 @@ private struct UnscheduleDropModifier: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .dropDestination(for: String.self) { items, _ in
+            .liveOnly { $0.dropDestination(for: String.self) { items, _ in
                 guard
                     let raw = items.first,
                     case .task(let id)? = DragPayload(raw),
@@ -146,7 +146,7 @@ private struct UnscheduleDropModifier: ViewModifier {
                 return true
             } isTargeted: { targeted in
                 isTargeted = targeted
-            }
+            } }
             .overlay {
                 if isTargeted {
                     RoundedRectangle(cornerRadius: 8).stroke(palette.selection, lineWidth: 2)

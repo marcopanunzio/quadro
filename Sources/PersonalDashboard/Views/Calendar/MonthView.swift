@@ -19,7 +19,7 @@ struct MonthView: View {
                                 .background(dayBackgroundColor(day))
                         }
                     }
-                    .frame(height: gridRowHeight)
+                    .frame(maxHeight: .infinity)
                     .border(palette.ui, width: 1)
                 }
             }
@@ -43,13 +43,6 @@ struct MonthView: View {
             }
         }
         .border(palette.ui, width: 1)
-    }
-
-    private var gridRowHeight: CGFloat {
-        // Fill available space, dividing equally among rows
-        let screenHeight = NSScreen.main?.visibleFrame.height ?? 800
-        let calendarPaneHeight = screenHeight - 100 // Rough estimate for header and padding
-        return calendarPaneHeight / CGFloat(model.monthRows.count)
     }
 
     private func dayBackgroundColor(_ day: DayDate) -> Color {
@@ -128,7 +121,7 @@ struct MonthDayCell: View {
         .onTapGesture {
             model.show(day: day, mode: .day)
         }
-        .dropDestination(for: String.self) { strings, location in
+        .liveOnly { $0.dropDestination(for: String.self) { strings, location in
             for string in strings {
                 if let payload = DragPayload(string), case .task(let id) = payload {
                     model.schedule(taskID: id, on: day)
@@ -138,7 +131,7 @@ struct MonthDayCell: View {
             return false
         } isTargeted: { targeted in
             isTargeted = targeted
-        }
+        } }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(accessibilityLabel(day, items: items))
     }
