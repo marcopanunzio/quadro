@@ -215,12 +215,14 @@ struct TaskBlockView: View {
     let columnWidth: CGFloat
     let gutterWidth: CGFloat
     let geometry: GridGeometry
+    let visibleTop: CGFloat
 
     @Environment(AppModel.self) private var model
     @Environment(\.palette) private var palette
 
     @State private var dragTranslation: CGSize = .zero
     @State private var pointerX: CGFloat?
+    @State private var pointerY: CGFloat = 0
 
     private var start: Date {
         if case .dateTime(let date) = task.due { return date }
@@ -238,12 +240,17 @@ struct TaskBlockView: View {
     private var isDone: Bool { model.isDone(task) }
     private var isDragging: Bool { pointerX != nil }
     private var isOutsideGrid: Bool { (pointerX ?? 0) > gridWidth }
+    /// Sopra la griglia visibile, cioè sulla fascia "tutto il giorno": il task prende solo la data.
+    private var isOverAllDay: Bool { isDragging && !isOutsideGrid && pointerY < visibleTop }
+
+    private func targetDay(for translation: CGSize) -> DayDate {
+        let dayShift = Int((translation.width / columnWidth).rounded())
+        return days[min(max(dayIndex + dayShift, 0), days.count - 1)]
+    }
 
     /// Giorno e ora di arrivo per uno spostamento, con snap a 15 minuti.
     private func target(for translation: CGSize) -> Date {
-        let dayShift = Int((translation.width / columnWidth).rounded())
-        let targetDay = days[min(max(dayIndex + dayShift, 0), days.count - 1)]
-        return geometry.date(forY: baseY + translation.height, on: targetDay, snapMinutes: 15)
+        geometry.date(forY: baseY + translation.height, on: targetDay(for: translation), snapMinutes: 15)
     }
 
     var body: some View {
@@ -268,7 +275,7 @@ struct TaskBlockView: View {
                 .lineLimit(1)
             Spacer(minLength: 0)
             if isDragging {
-                Text(isOutsideGrid ? "Togli ora" : geometry.timeLabel(target(for: dragTranslation)))
+                Text(isOutsideGrid ? "Togli ora" : isOverAllDay ? "Tutto il giorno" : geometry.timeLabel(target(for: dragTranslation)))
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundStyle(palette.accent(accent))
                     .lineLimit(1)
@@ -303,6 +310,7 @@ struct TaskBlockView: View {
             .onChanged { value in
                 dragTranslation = value.translation
                 pointerX = value.location.x
+                pointerY = value.location.y
                 let overList = value.location.x > gridWidth
                 if model.isTaskDragOverList != overList { model.isTaskDragOverList = overList }
             }
@@ -314,6 +322,10 @@ struct TaskBlockView: View {
                 }
                 if value.location.x > gridWidth {
                     model.unschedule(taskID: task.id)
+                    return
+                }
+                if value.location.y < visibleTop {
+                    model.schedule(taskID: task.id, on: targetDay(for: value.translation))
                     return
                 }
                 let newStart = target(for: value.translation)
@@ -399,6 +411,8 @@ struct AllBlocksLayer: View {
     let gutterWidth: CGFloat
     let geometry: GridGeometry
     let showLocation: Bool
+    /// y (nello spazio della griglia) del bordo alto visibile: sopra c'è la fascia "tutto il giorno".
+    let visibleTop: CGFloat
     let onCommitChange: (PendingEventChange) -> Void
 
     @Environment(AppModel.self) private var model
@@ -448,7 +462,8 @@ struct AllBlocksLayer: View {
                 slot: slots["t-\(task.id)"] ?? LayoutSlot(column: 0, columnCount: 1),
                 columnWidth: columnWidth,
                 gutterWidth: gutterWidth,
-                geometry: geometry
+                geometry: geometry,
+                visibleTop: visibleTop
             )
         }
     }

@@ -24,6 +24,9 @@ struct TimeGridView: View {
     @State private var allDayContentHeight: CGFloat = 0
     @State private var liveAllDayHeight: CGFloat?
     @State private var allDayDragStart: CGFloat?
+    @State private var allDayDropDay: DayDate?
+    /// Offset di scorrimento della griglia: sopra questo y (nello spazio della griglia) c'è la fascia "tutto il giorno".
+    @State private var scrollOffset: CGFloat = 0
 
     @State private var organizerWarningChange: PendingEventChange?
     @State private var recurrenceChoiceChange: PendingEventChange?
@@ -100,6 +103,7 @@ struct TimeGridView: View {
                 DispatchQueue.main.async { scrollPosition.scrollTo(y: y) }
             }
             .onScrollGeometryChange(for: CGFloat.self) { $0.contentOffset.y } action: { _, y in
+                scrollOffset = y
                 rememberScroll(y)
             }
         }
@@ -129,6 +133,7 @@ struct TimeGridView: View {
                 gutterWidth: gutterWidth,
                 geometry: geometry,
                 showLocation: days.count == 1,
+                visibleTop: isSnapshot ? 0 : scrollOffset,
                 onCommitChange: requestChange
             )
             ForEach(days.filter { $0 == model.today }, id: \.self) { day in
@@ -256,12 +261,13 @@ struct TimeGridView: View {
         return VStack(spacing: 0) {
             SnapshotFriendlyScrollView {
                 allDayRow(days: days, columnWidth: columnWidth)
+                    .fixedSize(horizontal: false, vertical: true)
                     .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { allDayContentHeight = $0 }
             }
             .frame(height: min(allDayContentHeight, maxHeight))
             SplitHandle(orientation: .horizontal) { dy in
                 if allDayDragStart == nil { allDayDragStart = min(allDayContentHeight, maxHeight) }
-                liveAllDayHeight = min(max((allDayDragStart ?? maxHeight) + dy, 20), 400)
+                liveAllDayHeight = min(max((allDayDragStart ?? maxHeight) + dy, 24), 400)
             } onEnded: {
                 if let live = liveAllDayHeight { model.settings.allDayAreaHeight = Double(live) }
                 liveAllDayHeight = nil
@@ -303,6 +309,17 @@ struct TimeGridView: View {
         }
         .padding(.horizontal, 2)
         .padding(.vertical, events.isEmpty && tasks.isEmpty ? 0 : 4)
+        // Sempre alta almeno una riga: è la zona dove rilasciare un task per dargli solo la data.
+        .frame(maxWidth: .infinity, minHeight: 24, alignment: .topLeading)
+        .background(allDayDropDay == day ? palette.selection.opacity(0.12) : Color.clear)
+        .contentShape(Rectangle())
+        .liveOnly { $0.dropDestination(for: String.self) { items, _ in
+            guard let raw = items.first, case .task(let id) = DragPayload(raw) else { return false }
+            model.schedule(taskID: id, on: day)
+            return true
+        } isTargeted: { targeted in
+            allDayDropDay = targeted ? day : (allDayDropDay == day ? nil : allDayDropDay)
+        } }
     }
 
     // MARK: Nuovo evento (trascinamento e doppio clic)
