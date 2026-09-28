@@ -81,18 +81,23 @@ import Testing
         #expect(sections.toPlan.map(\.id) == ["1"])
     }
 
+    @Test func futureDayOnlyIsNotInList() {
+        let future = task(id: "1", due: .day(DayDate(year: 2026, month: 9, day: 30)))
+        let sections = TaskClassifier.sections(for: [future], context: context)
+        #expect(sections.overdue.isEmpty && sections.today.isEmpty && sections.toPlan.isEmpty)
+    }
+
     @Test func toPlanOrdering() {
-        let laterDay = task(id: "laterDay", due: .day(DayDate(year: 2026, month: 10, day: 5)))
-        let earlierDay = task(id: "earlierDay", due: .day(DayDate(year: 2026, month: 9, day: 30)))
+        let dueToday = task(id: "today", due: .day(DayDate(year: 2026, month: 9, day: 28)))
         let noDueHighPriority = task(id: "highPriority", due: nil, priority: .high)
         let noDueLowPriorityB = task(id: "lowB", title: "banana", due: nil, priority: .low)
         let noDueLowPriorityA = task(id: "lowA", title: "arancia", due: nil, priority: .low)
 
         let sections = TaskClassifier.sections(
-            for: [noDueLowPriorityB, laterDay, noDueHighPriority, earlierDay, noDueLowPriorityA],
+            for: [noDueLowPriorityB, noDueHighPriority, dueToday, noDueLowPriorityA],
             context: context
         )
 
-        #expect(sections.toPlan.map(\.id) == ["earlierDay", "laterDay", "highPriority", "lowA", "lowB"])
+        #expect(sections.toPlan.map(\.id) == ["today", "highPriority", "lowA", "lowB"])
     }
 }

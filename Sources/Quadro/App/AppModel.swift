@@ -328,6 +328,12 @@ final class AppModel {
         }
     }
 
+    /// Task con sola data futura: non stanno nella lista, si vedono nella fascia "tutto il giorno" e nel mese.
+    func dayOnlyTasks(on day: DayDate) -> [TaskItem] {
+        guard day > today else { return [] }
+        return displayedTasks.filter { $0.due == .day(day) }
+    }
+
     /// Durata visiva dei task nel calendario (REQ-058).
     var taskBlockDuration: TimeInterval { TimeInterval(settings.taskBlockMinutes * 60) }
 

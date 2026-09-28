@@ -64,7 +64,7 @@ struct MonthDayCell: View {
         let isToday = model.today == day
         let allDayEvents = model.allDayEvents(on: day)
         let timedEvents = model.timedEvents(on: day)
-        let scheduledTasks = model.scheduledTasks(on: day)
+        let scheduledTasks = model.scheduledTasks(on: day) + model.dayOnlyTasks(on: day)
         let busyHours = model.busyHours(on: day)
 
         // Combine all items and sort by start time
@@ -220,6 +220,15 @@ struct MonthDayCell: View {
                     isAllDay: false,
                     time: timeStr,
                     startDate: date
+                ))
+            } else if case .day(let dueDay) = task.due {
+                items.append(DayItem(
+                    id: task.id,
+                    title: task.title,
+                    color: palette.accent(accent),
+                    isAllDay: true,
+                    time: "",
+                    startDate: dueDay.startDate(in: model.calendar)
                 ))
             }
         }

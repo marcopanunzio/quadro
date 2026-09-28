@@ -281,7 +281,11 @@ struct TimeGridView: View {
 
     private func allDayCell(day: DayDate) -> some View {
         let events = model.allDayEvents(on: day)
+        let tasks = model.dayOnlyTasks(on: day)
         return VStack(alignment: .leading, spacing: 2) {
+            ForEach(tasks) { task in
+                AllDayTaskChip(task: task)
+            }
             ForEach(events) { event in
                 HStack(spacing: 4) {
                     if !event.isWritable {
@@ -298,7 +302,7 @@ struct TimeGridView: View {
             }
         }
         .padding(.horizontal, 2)
-        .padding(.vertical, events.isEmpty ? 0 : 4)
+        .padding(.vertical, events.isEmpty && tasks.isEmpty ? 0 : 4)
     }
 
     // MARK: Nuovo evento (trascinamento e doppio clic)

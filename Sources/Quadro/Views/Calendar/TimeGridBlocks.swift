@@ -330,6 +330,67 @@ struct TaskBlockView: View {
     }
 }
 
+/// Task con sola data futura nella fascia "tutto il giorno": si completa dal pallino, si apre con un clic
+/// e si trascina su uno slot orario per dargli un'ora.
+struct AllDayTaskChip: View {
+    let task: TaskItem
+
+    @Environment(AppModel.self) private var model
+    @Environment(\.palette) private var palette
+
+    private var accent: AccentName { model.accent(forCalendar: task.listID) }
+    private var isDone: Bool { model.isDone(task) }
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Button {
+                model.toggleCompleted(task)
+            } label: {
+                Circle()
+                    .strokeBorder(palette.accent(accent), lineWidth: 1.5)
+                    .background(Circle().fill(isDone ? palette.accent(accent) : Color.clear))
+                    .frame(width: 9, height: 9)
+                    .padding(2)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(isDone ? "Segna come da fare" : "Segna come completato")
+
+            Text(task.title)
+                .font(.system(size: 11))
+                .foregroundStyle(isDone ? palette.tx2 : palette.tx)
+                .strikethrough(isDone, color: palette.tx2)
+                .lineLimit(1)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
+                .onTapGesture { model.selection = .task(task.id) }
+                .draggable(DragPayload.task(id: task.id).string)
+        }
+        .padding(.horizontal, 4)
+        .padding(.vertical, 2)
+        .background(RoundedRectangle(cornerRadius: 4).fill(palette.bg))
+        .overlay(
+            RoundedRectangle(cornerRadius: 4)
+                .stroke(palette.accent(accent), lineWidth: model.selection == .task(task.id) ? 2 : 1)
+        )
+        .opacity(isDone ? 0.7 : 1)
+        .popover(
+            isPresented: Binding(
+                get: { model.selection == .task(task.id) },
+                set: { if !$0 { model.selection = nil } }
+            ),
+            arrowEdge: .bottom
+        ) {
+            TaskDetailView(task: task)
+        }
+        .contextMenu {
+            Button(isDone ? "Riapri" : "Completa") { model.toggleCompleted(task) }
+            Button("Togli data") { model.unschedule(taskID: task.id) }
+            Button("Elimina", role: .destructive) { model.delete(task) }
+        }
+    }
+}
+
 /// Livello unico con tutti i blocchi di tutti i giorni visibili: consente di trascinare un evento tra colonne
 /// (giorni) diversi restando in un unico spazio di coordinate.
 struct AllBlocksLayer: View {

@@ -15,8 +15,8 @@ public struct TaskSections: Equatable, Sendable {
 
 public enum TaskClassifier {
     /// Classifica i task non completati in Scaduti / Oggi / Da pianificare.
-    /// Priorità: Scaduti > Da pianificare > Oggi. I `.dateTime` futuri oltre oggi non compaiono
-    /// in nessuna sezione (si vedono solo nel calendario).
+    /// Priorità: Scaduti > Da pianificare > Oggi. I task con scadenza oltre oggi (con o senza ora)
+    /// non compaiono in nessuna sezione: si vedono solo nel calendario.
     public static func sections(for tasks: [TaskItem], context: DateContext) -> TaskSections {
         let now = context.now()
         let today = context.today
@@ -37,9 +37,10 @@ public enum TaskClassifier {
             case .day(let day):
                 if day < today {
                     overdue.append(task)
-                } else {
+                } else if day == today {
                     toPlan.append(task)
                 }
+                // Solo data futura: già pianificato, si vede nel calendario e non nella lista.
             case nil:
                 toPlan.append(task)
             }
