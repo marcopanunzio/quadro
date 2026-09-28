@@ -2,10 +2,9 @@ import AppKit
 import DashboardCore
 import SwiftUI
 
-@main
 struct PersonalDashboardApp: App {
     /// `--mock`: dati finti al posto di EventKit, rete e Mail (REQ-109).
-    static let isMock = CommandLine.arguments.contains("--mock")
+    static let isMock = CommandLine.arguments.contains("--mock") || CommandLine.arguments.contains("--snapshot")
 
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @State private var model: AppModel

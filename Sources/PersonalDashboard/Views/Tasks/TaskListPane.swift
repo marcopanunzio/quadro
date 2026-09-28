@@ -8,7 +8,7 @@ struct TaskListPane: View {
 
     var body: some View {
         let sections = model.sections
-        ScrollView {
+        SnapshotFriendlyScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 QuickAddField()
 
