@@ -50,6 +50,8 @@ public protocol LocationProvider: Sendable {
     func authorizationStatus() -> PermissionStatus
     /// Chiede il permesso se necessario. Precisione ridotta.
     func currentCoordinate() async throws -> Coordinate
+    /// Nome della località per la barra meteo; `nil` se non disponibile.
+    func placeName(for coordinate: Coordinate) async -> String?
 }
 
 public protocol WeatherProvider: Sendable {
