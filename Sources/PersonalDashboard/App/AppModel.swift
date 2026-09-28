@@ -293,7 +293,9 @@ final class AppModel {
     /// Promemoria da mostrare, compresi i completati di questa sessione.
     var displayedTasks: [TaskItem] {
         let hidden = settings.hiddenTaskListIDs
-        return (tasks + recentlyCompleted.values).filter { !hidden.contains($0.listID) && !isPendingDeletion($0) }
+        // Un ricaricamento arrivato prima del salvataggio può riportare il task come aperto: vince la copia completata.
+        let open = tasks.filter { recentlyCompleted[$0.id] == nil }
+        return (open + recentlyCompleted.values).filter { !hidden.contains($0.listID) && !isPendingDeletion($0) }
     }
 
     var sections: TaskSections {
