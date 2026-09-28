@@ -57,6 +57,22 @@ struct EventBlockView: View {
     private var isSelected: Bool { model.selection == .event(event.id) }
     private var isCompact: Bool { displayHeight < 30 }
 
+    /// Orario mostrato nel blocco: durante spostamento o ridimensionamento quello di arrivo (snap a 15 minuti).
+    private var rangeText: String {
+        if dragTranslation != .zero {
+            let dayShift = Int((dragTranslation.width / columnWidth).rounded())
+            let targetDay = days[min(max(dayIndex + dayShift, 0), days.count - 1)]
+            let newStart = geometry.date(forY: baseY + dragTranslation.height, on: targetDay, snapMinutes: 15)
+            return geometry.rangeLabel(newStart, newStart.addingTimeInterval(event.end.timeIntervalSince(event.start)))
+        }
+        if resizeTranslation != 0 {
+            let minEnd = event.start.addingTimeInterval(15 * 60)
+            let newEnd = max(geometry.date(forY: baseY + baseHeight + resizeTranslation, on: day, snapMinutes: 15), minEnd)
+            return geometry.rangeLabel(visibleStart, newEnd)
+        }
+        return geometry.rangeLabel(visibleStart, visibleEnd)
+    }
+
     var body: some View {
         content
             .padding(.horizontal, 6)
@@ -77,6 +93,7 @@ struct EventBlockView: View {
             .onTapGesture { model.selection = .event(event.id) }
             .position(x: baseX + blockWidth / 2 + dragTranslation.width, y: baseY + displayHeight / 2 + dragTranslation.height)
             .opacity(isActive ? 0.85 : 1)
+            .zIndex(isActive ? 1 : 0)
             .popover(isPresented: popoverBinding, arrowEdge: .trailing) {
                 EventDetailView(event: event)
             }
@@ -101,7 +118,7 @@ struct EventBlockView: View {
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(palette.tx)
                     .lineLimit(1)
-                Text(geometry.rangeLabel(visibleStart, visibleEnd))
+                Text(rangeText)
                     .font(.system(size: 11))
                     .foregroundStyle(palette.accent(accent))
                     .lineLimit(1)
@@ -118,7 +135,7 @@ struct EventBlockView: View {
                         .foregroundStyle(palette.tx)
                         .lineLimit(1)
                 }
-                Text(geometry.rangeLabel(visibleStart, visibleEnd))
+                Text(rangeText)
                     .font(.system(size: 11))
                     .foregroundStyle(palette.accent(accent))
                 if showLocation, let location = event.location, !location.isEmpty, displayHeight > 60 {
@@ -186,12 +203,14 @@ struct EventBlockView: View {
     }
 }
 
-/// Un promemoria pianificato in un orario, mostrato come blocco nella griglia. Si sposta con il drag & drop
-/// di sistema (`.draggable`), condiviso con la lista "Da pianificare".
+/// Un promemoria pianificato in un orario, mostrato come blocco nella griglia. Si sposta come gli eventi
+/// (segue il cursore, snap a 15 minuti, anche su altri giorni); rilasciato fuori dalla griglia, sopra la lista,
+/// perde l'ora (REQ-055).
 struct TaskBlockView: View {
     let task: TaskItem
     let day: DayDate
     let dayIndex: Int
+    let days: [DayDate]
     let slot: LayoutSlot
     let columnWidth: CGFloat
     let gutterWidth: CGFloat
@@ -199,6 +218,9 @@ struct TaskBlockView: View {
 
     @Environment(AppModel.self) private var model
     @Environment(\.palette) private var palette
+
+    @State private var dragTranslation: CGSize = .zero
+    @State private var pointerX: CGFloat?
 
     private var start: Date {
         if case .dateTime(let date) = task.due { return date }
@@ -210,9 +232,19 @@ struct TaskBlockView: View {
     private var slotWidth: CGFloat { columnWidth / CGFloat(max(slot.columnCount, 1)) }
     private var baseX: CGFloat { gutterWidth + CGFloat(dayIndex) * columnWidth + CGFloat(slot.column) * slotWidth }
     private var blockWidth: CGFloat { max(slotWidth - 4, 10) }
+    private var gridWidth: CGFloat { gutterWidth + CGFloat(days.count) * columnWidth }
     private var accent: AccentName { model.accent(forCalendar: task.listID) }
     private var isSelected: Bool { model.selection == .task(task.id) }
     private var isDone: Bool { model.isDone(task) }
+    private var isDragging: Bool { pointerX != nil }
+    private var isOutsideGrid: Bool { (pointerX ?? 0) > gridWidth }
+
+    /// Giorno e ora di arrivo per uno spostamento, con snap a 15 minuti.
+    private func target(for translation: CGSize) -> Date {
+        let dayShift = Int((translation.width / columnWidth).rounded())
+        let targetDay = days[min(max(dayIndex + dayShift, 0), days.count - 1)]
+        return geometry.date(forY: baseY + translation.height, on: targetDay, snapMinutes: 15)
+    }
 
     var body: some View {
         HStack(spacing: 6) {
@@ -229,16 +261,18 @@ struct TaskBlockView: View {
             .buttonStyle(.plain)
             .accessibilityLabel(isDone ? "Segna come da fare" : "Segna come completato")
 
-            // Tap e drag solo sul titolo: il pallino deve ricevere il clic.
             Text(task.title)
                 .font(.system(size: 12))
                 .foregroundStyle(isDone ? palette.tx2 : palette.tx)
                 .strikethrough(isDone, color: palette.tx2)
                 .lineLimit(1)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-                .contentShape(Rectangle())
-                .onTapGesture { model.selection = .task(task.id) }
-                .draggable(DragPayload.task(id: task.id).string)
+            Spacer(minLength: 0)
+            if isDragging {
+                Text(isOutsideGrid ? "Togli ora" : geometry.timeLabel(target(for: dragTranslation)))
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(palette.accent(accent))
+                    .lineLimit(1)
+            }
         }
         .padding(.leading, 2)
         .padding(.trailing, 6)
@@ -246,10 +280,14 @@ struct TaskBlockView: View {
         .background(RoundedRectangle(cornerRadius: 6).fill(palette.bg))
         .overlay(
             RoundedRectangle(cornerRadius: 6)
-                .stroke(isDone ? palette.ui3 : palette.accent(accent), lineWidth: isSelected ? 2 : 1)
+                .stroke(isDone ? palette.ui3 : palette.accent(accent), lineWidth: isSelected || isDragging ? 2 : 1)
         )
-        .opacity(isDone ? 0.7 : 1)
-        .position(x: baseX + blockWidth / 2, y: baseY + baseHeight / 2)
+        .opacity(isDone ? 0.7 : (isDragging ? 0.9 : 1))
+        .contentShape(Rectangle())
+        .gesture(moveGesture)
+        .onTapGesture { model.selection = .task(task.id) }
+        .position(x: baseX + blockWidth / 2 + dragTranslation.width, y: baseY + baseHeight / 2 + dragTranslation.height)
+        .zIndex(isDragging ? 1 : 0)
         .popover(isPresented: popoverBinding, arrowEdge: .trailing) {
             TaskDetailView(task: task)
         }
@@ -258,6 +296,30 @@ struct TaskBlockView: View {
             Button("Togli ora") { model.unschedule(taskID: task.id) }
             Button("Elimina", role: .destructive) { model.delete(task) }
         }
+    }
+
+    private var moveGesture: some Gesture {
+        DragGesture(minimumDistance: 4, coordinateSpace: .named(TimeGridView.coordinateSpaceName))
+            .onChanged { value in
+                dragTranslation = value.translation
+                pointerX = value.location.x
+                let overList = value.location.x > gridWidth
+                if model.isTaskDragOverList != overList { model.isTaskDragOverList = overList }
+            }
+            .onEnded { value in
+                defer {
+                    dragTranslation = .zero
+                    pointerX = nil
+                    model.isTaskDragOverList = false
+                }
+                if value.location.x > gridWidth {
+                    model.unschedule(taskID: task.id)
+                    return
+                }
+                let newStart = target(for: value.translation)
+                guard newStart != start else { return }
+                model.schedule(taskID: task.id, at: newStart)
+            }
     }
 
     private var popoverBinding: Binding<Bool> {
@@ -321,6 +383,7 @@ struct AllBlocksLayer: View {
                 task: task,
                 day: day,
                 dayIndex: dayIndex,
+                days: days,
                 slot: slots["t-\(task.id)"] ?? LayoutSlot(column: 0, columnCount: 1),
                 columnWidth: columnWidth,
                 gutterWidth: gutterWidth,

@@ -77,6 +77,8 @@ final class AppModel {
 
     /// Incrementati dai comandi di menu (⌘N, ⌘⇧N); le view osservano il cambio con `onChange`.
     var quickAddFocusRequest = 0
+    /// Un task del calendario viene trascinato sopra la lista: la zona "Da pianificare" si evidenzia.
+    var isTaskDragOverList = false
     var newEventRequest = 0
 
     /// Aggiornato ogni 30 s: le proprietà derivate che dipendono dall'ora lo leggono per ricalcolarsi.

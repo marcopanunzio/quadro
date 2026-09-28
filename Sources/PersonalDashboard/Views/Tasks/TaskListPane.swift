@@ -148,7 +148,7 @@ private struct UnscheduleDropModifier: ViewModifier {
                 isTargeted = targeted
             } }
             .overlay {
-                if isTargeted {
+                if isTargeted || model.isTaskDragOverList {
                     RoundedRectangle(cornerRadius: 8).stroke(palette.selection, lineWidth: 2)
                 }
             }
