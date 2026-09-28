@@ -8,7 +8,7 @@ enum Entry {
         if CommandLine.arguments.contains("--snapshot") {
             SnapshotRunner.run()
         } else {
-            PersonalDashboardApp.main()
+            QuadroApp.main()
         }
     }
 }
@@ -37,7 +37,7 @@ enum SnapshotRunner {
     private static func render() async {
         let output = argument(after: "--snapshot") ?? "snapshot.png"
         let isDark = CommandLine.arguments.contains("--dark")
-        let suite = "personal-dashboard.snapshot"
+        let suite = "quadro.snapshot"
         UserDefaults().removePersistentDomain(forName: suite)
         let settings = SettingsStore(defaults: UserDefaults(suiteName: suite)!)
         if let view = argument(after: "--view").flatMap(CalendarViewMode.init(rawValue:)) {

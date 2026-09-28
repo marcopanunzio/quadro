@@ -2,7 +2,7 @@ import AppKit
 import DashboardCore
 import SwiftUI
 
-struct PersonalDashboardApp: App {
+struct QuadroApp: App {
     /// `--mock`: dati finti al posto di EventKit, rete e Mail (REQ-109).
     static let isMock = CommandLine.arguments.contains("--mock") || CommandLine.arguments.contains("--snapshot")
 
@@ -19,7 +19,7 @@ struct PersonalDashboardApp: App {
     }
 
     var body: some Scene {
-        Window(Self.isMock ? "Personal Dashboard (mock)" : "Personal Dashboard", id: "main") {
+        Window(Self.isMock ? "Quadro (mock)" : "Quadro", id: "main") {
             RootView()
                 .environment(model)
                 .modifier(PaletteProvider(themeID: model.settings.themeID))

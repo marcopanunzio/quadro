@@ -5,5 +5,5 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 "$ROOT/scripts/bundle.sh" debug >/dev/null
-pkill -x PersonalDashboard 2>/dev/null || true
-open -n "$ROOT/build/PersonalDashboard.app" --args "$@"
+pkill -x Quadro 2>/dev/null || true
+open -n "$ROOT/build/Quadro.app" --args "$@"

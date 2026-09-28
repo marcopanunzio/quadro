@@ -5,15 +5,15 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>it</string>
 	<key>CFBundleExecutable</key>
-	<string>PersonalDashboard</string>
+	<string>Quadro</string>
 	<key>CFBundleIdentifier</key>
-	<string>com.mpanunzio.PersonalDashboard</string>
+	<string>com.mpanunzio.Quadro</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>Personal Dashboard</string>
+	<string>Quadro</string>
 	<key>CFBundleDisplayName</key>
-	<string>Personal Dashboard</string>
+	<string>Quadro</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -29,14 +29,14 @@
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
 	<key>NSCalendarsFullAccessUsageDescription</key>
-	<string>Personal Dashboard mostra e modifica gli eventi dei tuoi calendari.</string>
+	<string>Quadro mostra e modifica gli eventi dei tuoi calendari.</string>
 	<key>NSRemindersFullAccessUsageDescription</key>
-	<string>Personal Dashboard mostra e pianifica i tuoi promemoria.</string>
+	<string>Quadro mostra e pianifica i tuoi promemoria.</string>
 	<key>NSLocationUsageDescription</key>
 	<string>La posizione approssimativa serve solo per il meteo.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>La posizione approssimativa serve solo per il meteo.</string>
 	<key>NSAppleEventsUsageDescription</key>
-	<string>Personal Dashboard legge da Mail il numero di messaggi non letti.</string>
+	<string>Quadro legge da Mail il numero di messaggi non letti.</string>
 </dict>
 </plist>

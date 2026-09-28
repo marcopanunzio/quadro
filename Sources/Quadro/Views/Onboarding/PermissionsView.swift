@@ -10,7 +10,7 @@ struct PermissionsView: View {
             Spacer()
             VStack(alignment: .leading, spacing: 24) {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Personal Dashboard")
+                    Text("Quadro")
                         .font(.system(size: 22, weight: .bold))
                         .foregroundStyle(palette.tx)
                     Text("Per mostrare la tua giornata servono alcuni permessi. I dati restano sul Mac: l'app legge e scrive direttamente su Calendario e Promemoria.")

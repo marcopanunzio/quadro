@@ -2,16 +2,16 @@
 import PackageDescription
 
 let package = Package(
-    name: "PersonalDashboard",
+    name: "Quadro",
     defaultLocalization: "it",
     platforms: [.macOS(.v26)],
     products: [
-        .executable(name: "PersonalDashboard", targets: ["PersonalDashboard"]),
+        .executable(name: "Quadro", targets: ["Quadro"]),
     ],
     targets: [
         .target(name: "DashboardCore"),
         .target(name: "DashboardServices", dependencies: ["DashboardCore"]),
-        .executableTarget(name: "PersonalDashboard", dependencies: ["DashboardCore", "DashboardServices"]),
+        .executableTarget(name: "Quadro", dependencies: ["DashboardCore", "DashboardServices"]),
         .testTarget(name: "DashboardCoreTests", dependencies: ["DashboardCore"]),
         .testTarget(name: "DashboardServicesTests", dependencies: ["DashboardServices"]),
     ]

@@ -257,7 +257,7 @@ struct SettingsView: View {
                 }
             }
             Section {
-                Text("Personal Dashboard legge solo il numero di messaggi non letti da Mail, e solo quando Mail è aperta.")
+                Text("Quadro legge solo il numero di messaggi non letti da Mail, e solo quando Mail è aperta.")
                     .font(.caption)
                     .foregroundStyle(palette.tx2)
             }

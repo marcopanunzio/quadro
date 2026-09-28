@@ -16,7 +16,7 @@ public final class AppleScriptMailProvider: MailProvider, @unchecked Sendable {
     private static let bundleIdentifier = "com.apple.mail"
     private static let notAuthorizedErrorCode = -1743
 
-    private let queue = DispatchQueue(label: "com.personaldashboard.mail.applescript")
+    private let queue = DispatchQueue(label: "com.mpanunzio.quadro.mail.applescript")
 
     public init() {}
 

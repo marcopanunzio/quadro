@@ -5,8 +5,8 @@ enum DragPayload: Equatable {
     case task(id: String)
     case event(id: String)
 
-    private static let taskPrefix = "personal-dashboard.task:"
-    private static let eventPrefix = "personal-dashboard.event:"
+    private static let taskPrefix = "quadro.task:"
+    private static let eventPrefix = "quadro.event:"
 
     var string: String {
         switch self {

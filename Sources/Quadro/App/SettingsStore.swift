@@ -15,9 +15,12 @@ final class SettingsStore {
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
-        if let data = defaults.data(forKey: Self.key),
+        // Prima installazione di Quadro: si recuperano le preferenze salvate quando l'app si chiamava Personal Dashboard.
+        let legacy = defaults == .standard ? UserDefaults(suiteName: "com.mpanunzio.PersonalDashboard")?.data(forKey: Self.key) : nil
+        if let data = defaults.data(forKey: Self.key) ?? legacy,
            let decoded = try? JSONDecoder().decode(AppSettings.self, from: data) {
             settings = decoded
+            if defaults.data(forKey: Self.key) == nil { save() }
         } else {
             settings = AppSettings()
         }
