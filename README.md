@@ -1,26 +1,27 @@
 # Quadro
 
-Dashboard personale per macOS: calendario, promemoria, meteo, compleanni e mail non lette in un'unica finestra.
-Legge e scrive direttamente su Calendario e Promemoria di Apple.
+A personal dashboard for macOS: calendar, reminders, weather, birthdays and unread mail in a single window.
+It reads from and writes directly to Apple Calendar and Reminders.
 
-## Requisiti
+## Requirements
 
-- macOS 26 o successivo
-- Swift 6.2 (bastano i Command Line Tools, Xcode non serve)
+- macOS 26 or later
+- Swift 6.2 (the Command Line Tools are enough, Xcode is not required)
 
-## Comandi
+## Commands
 
 ```sh
-scripts/create-signing-cert.sh   # una volta: certificato locale per firmare l'app
-scripts/run.sh                   # compila, assembla e avvia l'app
-scripts/run.sh --mock            # avvia con dati finti
-scripts/test.sh                  # test
+scripts/create-signing-cert.sh   # once: local certificate used to sign the app
+scripts/run.sh                   # build, bundle and launch the app
+scripts/run.sh --mock            # launch with sample data
+scripts/test.sh                  # tests
 scripts/bundle.sh release        # build/Quadro.app
-swift scripts/make-icon.swift    # rigenera Resources/AppIcon.icns
+swift scripts/make-icon.swift    # regenerate Resources/AppIcon.icns
+.build/debug/Quadro --snapshot out.png [--view day|week|month] [--dark]   # render the window to a PNG with sample data
 ```
 
-## Struttura
+## Structure
 
-- `Sources/DashboardCore`: modelli, logica, temi, protocolli dei servizi, mock. Nessuna dipendenza da framework di sistema oltre Foundation.
-- `Sources/DashboardServices`: EventKit, CoreLocation, Open-Meteo, AppleScript verso Mail.
-- `Sources/Quadro`: app SwiftUI.
+- `Sources/DashboardCore`: models, logic, themes, service protocols, mocks. No system framework dependencies besides Foundation.
+- `Sources/DashboardServices`: EventKit, CoreLocation, Open-Meteo, AppleScript for Mail.
+- `Sources/Quadro`: SwiftUI app.
