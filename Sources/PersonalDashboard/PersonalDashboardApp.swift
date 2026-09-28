@@ -91,6 +91,11 @@ struct DashboardCommands: Commands {
             Button("Periodo precedente") { model.step(-1) }.keyboardShortcut(.leftArrow)
             Button("Periodo successivo") { model.step(1) }.keyboardShortcut(.rightArrow)
             Divider()
+            Button(model.settings.isTaskPaneCollapsed ? "Mostra task" : "Nascondi task") {
+                model.settings.isTaskPaneCollapsed.toggle()
+            }
+            .keyboardShortcut("s", modifiers: [.command, .control])
+            Divider()
             Button("Togli data/ora al task") {
                 if let task = model.selectedTask { model.unschedule(taskID: task.id) }
             }

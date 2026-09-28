@@ -48,6 +48,14 @@ struct CalendarToolbar: View {
                 Image(systemName: "plus")
             }
             .accessibilityLabel("Nuovo evento")
+
+            Button {
+                model.settings.isTaskPaneCollapsed.toggle()
+            } label: {
+                Image(systemName: "sidebar.trailing")
+            }
+            .accessibilityLabel(model.settings.isTaskPaneCollapsed ? "Mostra task" : "Nascondi task")
+            .help(model.settings.isTaskPaneCollapsed ? "Mostra task (⌃⌘S)" : "Nascondi task (⌃⌘S)")
         }
         .padding(.horizontal, 16)
         .frame(height: 56)

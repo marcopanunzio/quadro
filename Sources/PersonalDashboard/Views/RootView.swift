@@ -7,6 +7,9 @@ struct RootView: View {
     @Environment(\.palette) private var palette
     @Environment(\.scenePhase) private var scenePhase
 
+    @State private var liveTaskPaneWidth: CGFloat?
+    @State private var dragStartWidth: CGFloat?
+
     var body: some View {
         @Bindable var model = model
         Group {
@@ -46,14 +49,26 @@ struct RootView: View {
             HeaderBar()
             Divider().overlay(palette.ui)
             GeometryReader { geo in
+                let width = taskPaneWidth(in: geo.size.width)
                 HStack(spacing: 0) {
                     CalendarPane()
-                        .frame(width: geo.size.width * 2 / 3)
-                    Divider().overlay(palette.ui)
-                    TaskListPane()
                         .frame(maxWidth: .infinity)
-                        .background(palette.bg2)
+                    if !model.settings.isTaskPaneCollapsed {
+                        SplitHandle(orientation: .vertical) { dx in
+                            if dragStartWidth == nil { dragStartWidth = width }
+                            liveTaskPaneWidth = clampTaskPaneWidth((dragStartWidth ?? width) - dx, total: geo.size.width)
+                        } onEnded: {
+                            if let live = liveTaskPaneWidth { model.settings.taskPaneWidth = Double(live) }
+                            liveTaskPaneWidth = nil
+                            dragStartWidth = nil
+                        }
+                        TaskListPane()
+                            .frame(width: width)
+                            .background(palette.bg2)
+                            .transition(.move(edge: .trailing))
+                    }
                 }
+                .animation(.snappy(duration: 0.2), value: model.settings.isTaskPaneCollapsed)
             }
         }
         .focusable()
@@ -67,6 +82,16 @@ struct RootView: View {
             model.selection = nil
             return .handled
         }
+    }
+
+    /// Riquadro task ridimensionabile (default un terzo della finestra), larghezza ricordata nelle preferenze.
+    private func taskPaneWidth(in total: CGFloat) -> CGFloat {
+        let preferred = liveTaskPaneWidth ?? model.settings.taskPaneWidth.map { CGFloat($0) } ?? total / 3
+        return clampTaskPaneWidth(preferred, total: total)
+    }
+
+    private func clampTaskPaneWidth(_ width: CGFloat, total: CGFloat) -> CGFloat {
+        min(max(width, 280), max(280, total * 0.6))
     }
 
     private func completeSelectedTask() -> KeyPress.Result {
