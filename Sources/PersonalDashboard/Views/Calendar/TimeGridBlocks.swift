@@ -139,7 +139,7 @@ struct EventBlockView: View {
             .contentShape(Rectangle())
             .pointerStyle(.frameResize(position: .bottom))
             .highPriorityGesture(
-                DragGesture(minimumDistance: 2)
+                DragGesture(minimumDistance: 2, coordinateSpace: .named(TimeGridView.coordinateSpaceName))
                     .onChanged { value in
                         guard event.isWritable else { return }
                         isActive = true
@@ -159,7 +159,7 @@ struct EventBlockView: View {
     }
 
     private var moveGesture: some Gesture {
-        DragGesture(minimumDistance: 4)
+        DragGesture(minimumDistance: 4, coordinateSpace: .named(TimeGridView.coordinateSpaceName))
             .onChanged { value in
                 guard event.isWritable else { return }
                 isActive = true
@@ -223,28 +223,33 @@ struct TaskBlockView: View {
                     .strokeBorder(palette.accent(accent), lineWidth: 1.5)
                     .background(Circle().fill(isDone ? palette.accent(accent) : Color.clear))
                     .frame(width: 10, height: 10)
+                    .padding(4)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .accessibilityLabel(isDone ? "Segna come da fare" : "Segna come completato")
 
+            // Tap e drag solo sul titolo: il pallino deve ricevere il clic.
             Text(task.title)
                 .font(.system(size: 12))
-                .foregroundStyle(palette.tx)
-                .strikethrough(isDone)
+                .foregroundStyle(isDone ? palette.tx2 : palette.tx)
+                .strikethrough(isDone, color: palette.tx2)
                 .lineLimit(1)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
+                .onTapGesture { model.selection = .task(task.id) }
+                .draggable(DragPayload.task(id: task.id).string)
         }
-        .padding(.horizontal, 6)
+        .padding(.leading, 2)
+        .padding(.trailing, 6)
         .frame(width: blockWidth, height: baseHeight, alignment: .leading)
         .background(RoundedRectangle(cornerRadius: 6).fill(palette.bg))
         .overlay(
             RoundedRectangle(cornerRadius: 6)
-                .stroke(palette.accent(accent), lineWidth: isSelected ? 2 : 1)
+                .stroke(isDone ? palette.ui3 : palette.accent(accent), lineWidth: isSelected ? 2 : 1)
         )
-        .opacity(isDone ? 0.6 : 1)
-        .contentShape(Rectangle())
+        .opacity(isDone ? 0.7 : 1)
         .position(x: baseX + blockWidth / 2, y: baseY + baseHeight / 2)
-        .onTapGesture { model.selection = .task(task.id) }
-        .draggable(DragPayload.task(id: task.id).string)
         .popover(isPresented: popoverBinding, arrowEdge: .trailing) {
             TaskDetailView(task: task)
         }

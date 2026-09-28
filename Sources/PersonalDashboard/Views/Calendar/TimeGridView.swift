@@ -7,7 +7,10 @@ struct TimeGridView: View {
     private let gutterWidth: CGFloat = 48
     private let hourHeight: CGFloat = 54
     private let headerHeight: CGFloat = 44
-    private static let scrollAnchorID = "time-grid-0730"
+    /// Spazio di coordinate della griglia: i drag dei blocchi si misurano qui, non sul blocco che si muove.
+    static let coordinateSpaceName = "time-grid"
+    /// Margine sopra l'ora iniziale, così la sua etichetta non resta tagliata a metà.
+    private let topInset: CGFloat = 12
 
     @Environment(AppModel.self) private var model
     @Environment(\.isSnapshot) private var isSnapshot
@@ -15,7 +18,12 @@ struct TimeGridView: View {
 
     @State private var newEventDraft: NewEventDraft?
     @State private var dropTargetDay: DayDate?
+    @State private var scrollPosition = ScrollPosition()
     @State private var didSetInitialScroll = false
+    @State private var saveScrollTask: Task<Void, Never>?
+    @State private var allDayContentHeight: CGFloat = 0
+    @State private var liveAllDayHeight: CGFloat?
+    @State private var allDayDragStart: CGFloat?
 
     @State private var organizerWarningChange: PendingEventChange?
     @State private var recurrenceChoiceChange: PendingEventChange?
@@ -30,8 +38,7 @@ struct TimeGridView: View {
 
             VStack(spacing: 0) {
                 columnHeaders(days: days, columnWidth: columnWidth)
-                allDayRow(days: days, columnWidth: columnWidth)
-                Rectangle().fill(palette.ui).frame(height: 1)
+                allDayArea(days: days, columnWidth: columnWidth)
                 scrollableGrid(days: days, columnWidth: columnWidth, totalWidth: proxy.size.width)
             }
         }
@@ -76,24 +83,37 @@ struct TimeGridView: View {
     @ViewBuilder
     private func scrollableGrid(days: [DayDate], columnWidth: CGFloat, totalWidth: CGFloat) -> some View {
         if isSnapshot {
-            // ImageRenderer non disegna le ScrollView: si mostra la griglia già spostata alle 7:30.
+            // ImageRenderer non disegna le ScrollView: si mostra la griglia già spostata all'ora iniziale.
             gridContent(days: days, columnWidth: columnWidth, totalWidth: totalWidth)
-                .offset(y: -7.5 * hourHeight)
+                .offset(y: -max(CGFloat(model.settings.initialGridHour) * hourHeight - topInset, 0))
                 .frame(maxHeight: .infinity, alignment: .top)
                 .clipped()
         } else {
-            ScrollViewReader { scrollProxy in
-                ScrollView(.vertical) {
-                    gridContent(days: days, columnWidth: columnWidth, totalWidth: totalWidth)
-                }
-                .onAppear {
-                    guard !didSetInitialScroll else { return }
-                    didSetInitialScroll = true
-                    DispatchQueue.main.async {
-                        scrollProxy.scrollTo(Self.scrollAnchorID, anchor: .top)
-                    }
-                }
+            ScrollView(.vertical) {
+                gridContent(days: days, columnWidth: columnWidth, totalWidth: totalWidth)
             }
+            .scrollPosition($scrollPosition)
+            .onAppear {
+                guard !didSetInitialScroll else { return }
+                didSetInitialScroll = true
+                let y = max(CGFloat(model.settings.initialGridHour) * hourHeight - topInset, 0)
+                DispatchQueue.main.async { scrollPosition.scrollTo(y: y) }
+            }
+            .onScrollGeometryChange(for: CGFloat.self) { $0.contentOffset.y } action: { _, y in
+                rememberScroll(y)
+            }
+        }
+    }
+
+    /// Salva l'ora in cima alla griglia, con un piccolo ritardo per non scrivere a ogni frame.
+    private func rememberScroll(_ y: CGFloat) {
+        guard didSetInitialScroll, model.settings.rememberGridScroll else { return }
+        saveScrollTask?.cancel()
+        saveScrollTask = Task {
+            try? await Task.sleep(for: .milliseconds(500))
+            guard !Task.isCancelled else { return }
+            let hour = (Double(max(y + topInset, 0) / hourHeight) * 4).rounded() / 4
+            if model.settings.lastGridScrollHour != hour { model.settings.lastGridScrollHour = hour }
         }
     }
 
@@ -117,12 +137,9 @@ struct TimeGridView: View {
             if let draft = newEventDraft {
                 newEventGhost(draft, columnWidth: columnWidth)
             }
-            Color.clear
-                .frame(width: 1, height: 1)
-                .id(Self.scrollAnchorID)
-                .position(x: 0, y: 7.5 * hourHeight)
         }
         .frame(width: totalWidth, height: geometry.totalHeight, alignment: .topLeading)
+        .coordinateSpace(.named(Self.coordinateSpaceName))
     }
 
     private var gutterColumn: some View {
@@ -231,6 +248,27 @@ struct TimeGridView: View {
     }
 
     // MARK: Riga "tutto il giorno"
+
+    /// Area "tutto il giorno": alta al massimo quanto impostato col divisore sotto, mai più del contenuto;
+    /// se gli eventi non ci stanno si scorre.
+    private func allDayArea(days: [DayDate], columnWidth: CGFloat) -> some View {
+        let maxHeight = liveAllDayHeight ?? CGFloat(model.settings.allDayAreaHeight)
+        return VStack(spacing: 0) {
+            SnapshotFriendlyScrollView {
+                allDayRow(days: days, columnWidth: columnWidth)
+                    .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { allDayContentHeight = $0 }
+            }
+            .frame(height: min(allDayContentHeight, maxHeight))
+            SplitHandle(orientation: .horizontal) { dy in
+                if allDayDragStart == nil { allDayDragStart = min(allDayContentHeight, maxHeight) }
+                liveAllDayHeight = min(max((allDayDragStart ?? maxHeight) + dy, 20), 400)
+            } onEnded: {
+                if let live = liveAllDayHeight { model.settings.allDayAreaHeight = Double(live) }
+                liveAllDayHeight = nil
+                allDayDragStart = nil
+            }
+        }
+    }
 
     private func allDayRow(days: [DayDate], columnWidth: CGFloat) -> some View {
         HStack(alignment: .top, spacing: 0) {
