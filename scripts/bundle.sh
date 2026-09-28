@@ -15,6 +15,7 @@ rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN_DIR/Quadro" "$APP/Contents/MacOS/"
 cp "$ROOT/Resources/Info.plist" "$APP/Contents/"
+cp "$ROOT/Resources/AppIcon.icns" "$APP/Contents/Resources/"
 
 if security find-identity -p codesigning | grep -q "\"$IDENTITY\""; then
     codesign --force --sign "$IDENTITY" --entitlements "$ROOT/Resources/Quadro.entitlements" "$APP"

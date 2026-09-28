@@ -16,6 +16,7 @@ scripts/run.sh                   # compila, assembla e avvia l'app
 scripts/run.sh --mock            # avvia con dati finti
 scripts/test.sh                  # test
 scripts/bundle.sh release        # build/Quadro.app
+swift scripts/make-icon.swift    # rigenera Resources/AppIcon.icns
 ```
 
 ## Struttura
