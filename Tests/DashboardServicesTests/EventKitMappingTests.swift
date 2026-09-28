@@ -180,3 +180,35 @@ import Testing
         #expect(rgb == RGB(r: 0, g: 0, b: 0))
     }
 }
+
+@Suite struct AlarmShiftTests {
+    let calendar: Calendar = {
+        var c = Calendar(identifier: .gregorian)
+        c.timeZone = TimeZone(identifier: "Europe/Rome")!
+        return c
+    }()
+
+    func date(_ day: Int, _ hour: Int, _ minute: Int = 0) -> Date {
+        calendar.date(from: DateComponents(year: 2026, month: 9, day: day, hour: hour, minute: minute))!
+    }
+
+    @Test func timeToTimeKeepsOffset() {
+        let shifted = EventKitDueDate.shiftedAlarmDate(date(28, 14, 45), from: .dateTime(date(28, 15)), to: .dateTime(date(29, 10)), calendar: calendar)
+        #expect(shifted == date(29, 9, 45))
+    }
+
+    @Test func dayToDayKeepsAlarmTime() {
+        let shifted = EventKitDueDate.shiftedAlarmDate(
+            date(28, 9),
+            from: .day(DayDate(year: 2026, month: 9, day: 28)),
+            to: .day(DayDate(year: 2026, month: 9, day: 29)),
+            calendar: calendar
+        )
+        #expect(shifted == date(29, 9))
+    }
+
+    @Test func timeToDayMovesByDays() {
+        let shifted = EventKitDueDate.shiftedAlarmDate(date(28, 15), from: .dateTime(date(28, 15)), to: .day(DayDate(year: 2026, month: 9, day: 30)), calendar: calendar)
+        #expect(shifted == date(30, 15))
+    }
+}

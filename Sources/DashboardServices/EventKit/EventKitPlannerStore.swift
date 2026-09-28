@@ -262,11 +262,7 @@ public final class EventKitPlannerStore: PlannerStore, @unchecked Sendable {
         }
         reminder.title = task.title
         reminder.notes = task.notes
-        if let due = task.due {
-            reminder.dueDateComponents = EventKitDueDate.toDateComponents(due, calendar: calendar)
-        } else {
-            reminder.dueDateComponents = nil
-        }
+        applyDue(task.due, to: reminder)
         reminder.priority = EventKitPriority.toEventKitPriority(task.priority)
         reminder.isCompleted = task.isCompleted
         do {
@@ -286,6 +282,30 @@ public final class EventKitPlannerStore: PlannerStore, @unchecked Sendable {
             try eventStore.remove(reminder, commit: true)
         } catch {
             throw PlannerError.underlying(error.localizedDescription)
+        }
+    }
+
+    /// Aggiorna la scadenza tenendo allineati data di inizio e avvisi a orario fisso: Calendario mostra i promemoria
+    /// alla data di inizio, e l'app Promemoria la tiene uguale alla scadenza.
+    private func applyDue(_ due: TaskDue?, to reminder: EKReminder) {
+        let oldDue = reminder.dueDateComponents.flatMap { EventKitDueDate.toTaskDue($0, calendar: calendar) }
+        guard let due else {
+            reminder.dueDateComponents = nil
+            reminder.startDateComponents = nil
+            for alarm in reminder.alarms ?? [] where alarm.absoluteDate != nil {
+                reminder.removeAlarm(alarm)
+            }
+            return
+        }
+        let components = EventKitDueDate.toDateComponents(due, calendar: calendar)
+        reminder.dueDateComponents = components
+        reminder.startDateComponents = components
+        if let oldDue, oldDue != due {
+            for alarm in reminder.alarms ?? [] {
+                if let date = alarm.absoluteDate {
+                    alarm.absoluteDate = EventKitDueDate.shiftedAlarmDate(date, from: oldDue, to: due, calendar: calendar)
+                }
+            }
         }
     }
 
