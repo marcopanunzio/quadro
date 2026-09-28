@@ -40,24 +40,34 @@ public struct OKLab: Hashable, Sendable {
     }
 }
 
-/// Trova l'accento (nella variante light) più vicino al colore sRGB,
-/// usando la distanza euclidea in spazio OKLab.
+extension OKLab {
+    /// Croma (saturazione percepita).
+    public var chroma: Double { sqrt(a * a + b * b) }
+    /// Tinta in radianti.
+    public var hue: Double { atan2(b, a) }
+}
+
+/// Accento del tema (variante light) più vicino al colore dato (DEC-018).
+/// Si confronta la tinta e non la distanza OKLab piena: i colori dei calendari Apple sono molto più
+/// chiari e saturi degli accenti Flexoki, e con la luminosità nel conto il rosso finirebbe sull'arancio.
+/// Per colori quasi grigi la tinta non è significativa e si torna alla distanza OKLab.
 public func nearestAccent(to color: RGB, in theme: Theme) -> AccentName {
-    let targetOKLab = OKLab(color)
-    var minDistance = Double.infinity
-    var nearest = AccentName.red
-
-    // Confrontiamo sempre con gli accenti della variante light
-    let lightColors = theme.light.accents
-
-    for (accentName, accentRGB) in lightColors {
-        let accentOKLab = OKLab(accentRGB)
-        let dist = targetOKLab.distance(to: accentOKLab)
-        if dist < minDistance {
-            minDistance = dist
-            nearest = accentName
+    let target = OKLab(color)
+    let candidates = theme.light.accents.map { (name: $0.key, lab: OKLab($0.value)) }
+    let score: (OKLab) -> Double
+    if target.chroma < 0.04 {
+        score = { target.distance(to: $0) }
+    } else {
+        score = { lab in
+            let d = abs(target.hue - lab.hue)
+            return min(d, 2 * .pi - d)
         }
     }
-
-    return nearest
+    // Ordine stabile a parità di punteggio.
+    return candidates
+        .min { lhs, rhs in
+            let l = score(lhs.lab), r = score(rhs.lab)
+            return l == r ? lhs.name.rawValue < rhs.name.rawValue : l < r
+        }!
+        .name
 }

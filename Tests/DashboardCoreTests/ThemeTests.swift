@@ -73,12 +73,11 @@ import Testing
     }
 
     @Test func nearestAccentAppleRed() {
-        // Apple red #FF3B30 mappa a orange (non a red) in OKLab
         let appleRed = RGB(hex: "#FF3B30")
         let theme = Theme.flexoki
         let nearest = nearestAccent(to: appleRed, in: theme)
 
-        #expect(nearest == .orange)
+        #expect(nearest == .red)
     }
 
     @Test func nearestAccentAppleBlue() {
@@ -91,12 +90,11 @@ import Testing
     }
 
     @Test func nearestAccentApplePurple() {
-        // Apple purple #AF52DE mappa a magenta (non a purple) in OKLab
         let applePurple = RGB(hex: "#AF52DE")
         let theme = Theme.flexoki
         let nearest = nearestAccent(to: applePurple, in: theme)
 
-        #expect(nearest == .magenta)
+        #expect(nearest == .purple)
     }
 
     @Test func nearestAccentFlexokiAccents() {
@@ -123,5 +121,15 @@ import Testing
     @Test func themeRegistryAllContainsFlexoki() {
         let allThemes = ThemeRegistry.all
         #expect(allThemes.contains { $0.id == "flexoki" })
+    }
+
+    @Test(arguments: [
+        ("#FF9500", AccentName.orange),
+        ("#FFCC00", .yellow),
+        ("#34C759", .green),
+        ("#FF2D55", .red),
+    ])
+    func nearestAccentOtherAppleColors(hex: String, expected: AccentName) {
+        #expect(nearestAccent(to: RGB(hex: hex), in: .flexoki) == expected)
     }
 }
