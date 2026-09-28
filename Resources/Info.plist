@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>it</string>
+	<key>CFBundleExecutable</key>
+	<string>PersonalDashboard</string>
+	<key>CFBundleIdentifier</key>
+	<string>com.mpanunzio.PersonalDashboard</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>Personal Dashboard</string>
+	<key>CFBundleDisplayName</key>
+	<string>Personal Dashboard</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>0.1.0</string>
+	<key>CFBundleVersion</key>
+	<string>1</string>
+	<key>LSMinimumSystemVersion</key>
+	<string>26.0</string>
+	<key>LSApplicationCategoryType</key>
+	<string>public.app-category.productivity</string>
+	<key>NSHighResolutionCapable</key>
+	<true/>
+	<key>NSPrincipalClass</key>
+	<string>NSApplication</string>
+	<key>NSCalendarsFullAccessUsageDescription</key>
+	<string>Personal Dashboard mostra e modifica gli eventi dei tuoi calendari.</string>
+	<key>NSRemindersFullAccessUsageDescription</key>
+	<string>Personal Dashboard mostra e pianifica i tuoi promemoria.</string>
+	<key>NSLocationUsageDescription</key>
+	<string>La posizione approssimativa serve solo per il meteo.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>La posizione approssimativa serve solo per il meteo.</string>
+	<key>NSAppleEventsUsageDescription</key>
+	<string>Personal Dashboard legge da Mail il numero di messaggi non letti.</string>
+</dict>
+</plist>
