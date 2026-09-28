@@ -16,6 +16,7 @@ scripts/run.sh                   # build, bundle and launch the app
 scripts/run.sh --mock            # launch with sample data
 scripts/test.sh                  # tests
 scripts/bundle.sh release        # build/Quadro.app
+scripts/install.sh               # install or update /Applications/Quadro.app
 swift scripts/make-icon.swift    # regenerate Resources/AppIcon.icns
 .build/debug/Quadro --snapshot out.png [--view day|week|month] [--dark]   # render the window to a PNG with sample data
 ```
@@ -25,3 +26,13 @@ swift scripts/make-icon.swift    # regenerate Resources/AppIcon.icns
 - `Sources/DashboardCore`: models, logic, themes, service protocols, mocks. No system framework dependencies besides Foundation.
 - `Sources/DashboardServices`: EventKit, CoreLocation, Open-Meteo, AppleScript for Mail.
 - `Sources/Quadro`: SwiftUI app.
+
+## Install and update
+
+```sh
+scripts/create-signing-cert.sh   # once
+scripts/install.sh               # builds a release and copies it to /Applications
+git pull && scripts/install.sh   # update
+```
+
+The app is signed with the local certificate, so macOS keeps the granted permissions across updates.
