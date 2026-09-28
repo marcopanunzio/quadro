@@ -72,26 +72,6 @@ enum EventKitDueDate {
             return calendar.dateComponents([.year, .month, .day, .hour, .minute], from: date)
         }
     }
-
-    /// Nuova data di un avviso a orario fisso quando la scadenza passa da `old` a `new`.
-    /// Tra due orari si sposta della stessa differenza; se una delle due è solo giorno si sposta
-    /// degli stessi giorni mantenendo l'ora dell'avviso.
-    static func shiftedAlarmDate(_ alarmDate: Date, from old: TaskDue, to new: TaskDue, calendar: Calendar) -> Date {
-        if case .dateTime(let oldDate) = old, case .dateTime(let newDate) = new {
-            return alarmDate.addingTimeInterval(newDate.timeIntervalSince(oldDate))
-        }
-        let oldDay = day(of: old, calendar: calendar).startDate(in: calendar)
-        let newDay = day(of: new, calendar: calendar).startDate(in: calendar)
-        let days = calendar.dateComponents([.day], from: oldDay, to: newDay).day ?? 0
-        return calendar.date(byAdding: .day, value: days, to: alarmDate) ?? alarmDate
-    }
-
-    private static func day(of due: TaskDue, calendar: Calendar) -> DayDate {
-        switch due {
-        case .day(let day): day
-        case .dateTime(let date): DayDate(date, calendar: calendar)
-        }
-    }
 }
 
 /// Mapping del tipo di calendario EventKit.

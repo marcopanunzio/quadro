@@ -238,9 +238,7 @@ public final class EventKitPlannerStore: PlannerStore, @unchecked Sendable {
         reminder.title = draft.title
         reminder.notes = draft.notes
         reminder.priority = EventKitPriority.toEventKitPriority(draft.priority)
-        if let due = draft.due {
-            reminder.dueDateComponents = EventKitDueDate.toDateComponents(due, calendar: calendar)
-        }
+        applyDue(draft.due, to: reminder)
         do {
             try eventStore.save(reminder, commit: true)
         } catch {
@@ -285,27 +283,20 @@ public final class EventKitPlannerStore: PlannerStore, @unchecked Sendable {
         }
     }
 
-    /// Aggiorna la scadenza tenendo allineati data di inizio e avvisi a orario fisso: Calendario mostra i promemoria
-    /// alla data di inizio, e l'app Promemoria la tiene uguale alla scadenza.
+    /// Aggiorna la scadenza tenendo l'avviso coerente. L'app Promemoria per un promemoria con orario crea un avviso
+    /// a orario fisso uguale alla scadenza, e Calendario mostra il promemoria all'ora dell'avviso: se l'avviso
+    /// restasse al vecchio orario il promemoria apparirebbe nel giorno sbagliato. Gli avvisi relativi (es. "15 minuti
+    /// prima") seguono già la scadenza e restano come sono.
     private func applyDue(_ due: TaskDue?, to reminder: EKReminder) {
-        let oldDue = reminder.dueDateComponents.flatMap { EventKitDueDate.toTaskDue($0, calendar: calendar) }
-        guard let due else {
-            reminder.dueDateComponents = nil
-            reminder.startDateComponents = nil
-            for alarm in reminder.alarms ?? [] where alarm.absoluteDate != nil {
-                reminder.removeAlarm(alarm)
-            }
-            return
+        let absoluteAlarms = (reminder.alarms ?? []).filter { $0.absoluteDate != nil }
+        for alarm in absoluteAlarms {
+            reminder.removeAlarm(alarm)
         }
-        let components = EventKitDueDate.toDateComponents(due, calendar: calendar)
-        reminder.dueDateComponents = components
-        reminder.startDateComponents = components
-        if let oldDue, oldDue != due {
-            for alarm in reminder.alarms ?? [] {
-                if let date = alarm.absoluteDate {
-                    alarm.absoluteDate = EventKitDueDate.shiftedAlarmDate(date, from: oldDue, to: due, calendar: calendar)
-                }
-            }
+        reminder.dueDateComponents = due.map { EventKitDueDate.toDateComponents($0, calendar: calendar) }
+        // Come in Promemoria: una scadenza con orario notifica a quell'ora, salvo avvisi relativi già presenti.
+        let hasRelativeAlarms = (reminder.alarms ?? []).contains { $0.absoluteDate == nil }
+        if case .dateTime(let date) = due, !hasRelativeAlarms {
+            reminder.addAlarm(EKAlarm(absoluteDate: date))
         }
     }
 
