@@ -86,35 +86,31 @@ public final class MockPlannerStore: PlannerStore, @unchecked Sendable {
     // MARK: - Synchronous Implementations
 
     nonisolated private func calendarsSynchronous() -> [CalendarInfo] {
-        let mutableSelf = self as! MockPlannerStore
-        mutableSelf.lock.lock()
-        defer { mutableSelf.lock.unlock() }
-        return mutableSelf.state.calendars
+        self.lock.lock()
+        defer { self.lock.unlock() }
+        return self.state.calendars
     }
 
     nonisolated private func taskListsSynchronous() -> [TaskListInfo] {
-        let mutableSelf = self as! MockPlannerStore
-        mutableSelf.lock.lock()
-        defer { mutableSelf.lock.unlock() }
-        return mutableSelf.state.taskLists
+        self.lock.lock()
+        defer { self.lock.unlock() }
+        return self.state.taskLists
     }
 
     nonisolated private func eventsSynchronous(in interval: DateInterval) -> [CalendarEvent] {
-        let mutableSelf = self as! MockPlannerStore
-        mutableSelf.lock.lock()
-        defer { mutableSelf.lock.unlock() }
-        return mutableSelf.state.events.filter { event in
+        self.lock.lock()
+        defer { self.lock.unlock() }
+        return self.state.events.filter { event in
             event.start < interval.end && event.end > interval.start
         }.sorted { $0.start < $1.start }
     }
 
     nonisolated private func createEventSynchronous(_ draft: EventDraft) throws -> CalendarEvent {
-        let mutableSelf = self as! MockPlannerStore
-        mutableSelf.lock.lock()
-        defer { mutableSelf.lock.unlock() }
+        self.lock.lock()
+        defer { self.lock.unlock() }
 
         let calendarID = draft.calendarID ?? "personal"
-        guard mutableSelf.state.calendars.first(where: { $0.id == calendarID })?.isWritable == true else {
+        guard self.state.calendars.first(where: { $0.id == calendarID })?.isWritable == true else {
             throw PlannerError.readOnly
         }
 
@@ -132,78 +128,74 @@ public final class MockPlannerStore: PlannerStore, @unchecked Sendable {
             isWritable: true
         )
 
-        mutableSelf.state.events.append(event)
-        mutableSelf.emitChangeSynchronous()
+        self.state.events.append(event)
+        self.emitChangeSynchronous()
         return event
     }
 
     nonisolated private func updateEventSynchronous(_ event: CalendarEvent, span: EditSpan) throws -> CalendarEvent {
-        let mutableSelf = self as! MockPlannerStore
-        mutableSelf.lock.lock()
-        defer { mutableSelf.lock.unlock() }
+        self.lock.lock()
+        defer { self.lock.unlock() }
 
-        guard mutableSelf.state.calendars.first(where: { $0.id == event.calendarID })?.isWritable == true else {
+        guard self.state.calendars.first(where: { $0.id == event.calendarID })?.isWritable == true else {
             throw PlannerError.readOnly
         }
 
-        guard let index = mutableSelf.state.events.firstIndex(where: { $0.id == event.id }) else {
+        guard let index = self.state.events.firstIndex(where: { $0.id == event.id }) else {
             throw PlannerError.notFound
         }
 
-        mutableSelf.state.events[index] = event
+        self.state.events[index] = event
 
         if event.isRecurring && span == .futureOccurrences {
-            let futureEventIndices = mutableSelf.state.events.indices.filter { i in
-                mutableSelf.state.events[i].eventIdentifier == event.eventIdentifier && mutableSelf.state.events[i].start >= event.start
+            let futureEventIndices = self.state.events.indices.filter { i in
+                self.state.events[i].eventIdentifier == event.eventIdentifier && self.state.events[i].start >= event.start
             }
             for idx in futureEventIndices {
-                var updated = mutableSelf.state.events[idx]
+                var updated = self.state.events[idx]
                 updated.title = event.title
                 updated.start = event.start
                 updated.end = event.end
-                mutableSelf.state.events[idx] = updated
+                self.state.events[idx] = updated
             }
         }
 
-        mutableSelf.emitChangeSynchronous()
+        self.emitChangeSynchronous()
         return event
     }
 
     nonisolated private func deleteEventSynchronous(_ event: CalendarEvent, span: EditSpan) throws {
-        let mutableSelf = self as! MockPlannerStore
-        mutableSelf.lock.lock()
-        defer { mutableSelf.lock.unlock() }
+        self.lock.lock()
+        defer { self.lock.unlock() }
 
-        guard mutableSelf.state.calendars.first(where: { $0.id == event.calendarID })?.isWritable == true else {
+        guard self.state.calendars.first(where: { $0.id == event.calendarID })?.isWritable == true else {
             throw PlannerError.readOnly
         }
 
-        guard mutableSelf.state.events.contains(where: { $0.id == event.id }) else {
+        guard self.state.events.contains(where: { $0.id == event.id }) else {
             throw PlannerError.notFound
         }
 
         if event.isRecurring && span == .futureOccurrences {
-            mutableSelf.state.events.removeAll { e in
+            self.state.events.removeAll { e in
                 e.eventIdentifier == event.eventIdentifier && e.start >= event.start
             }
         } else {
-            mutableSelf.state.events.removeAll { $0.id == event.id }
+            self.state.events.removeAll { $0.id == event.id }
         }
 
-        mutableSelf.emitChangeSynchronous()
+        self.emitChangeSynchronous()
     }
 
     nonisolated private func incompleteTasksSynchronous() -> [TaskItem] {
-        let mutableSelf = self as! MockPlannerStore
-        mutableSelf.lock.lock()
-        defer { mutableSelf.lock.unlock() }
-        return mutableSelf.state.tasks.filter { !$0.isCompleted }
+        self.lock.lock()
+        defer { self.lock.unlock() }
+        return self.state.tasks.filter { !$0.isCompleted }
     }
 
     nonisolated private func createTaskSynchronous(_ draft: TaskDraft) -> TaskItem {
-        let mutableSelf = self as! MockPlannerStore
-        mutableSelf.lock.lock()
-        defer { mutableSelf.lock.unlock() }
+        self.lock.lock()
+        defer { self.lock.unlock() }
 
         let listID = draft.listID ?? "reminders"
         let taskID = UUID().uuidString
@@ -217,41 +209,38 @@ public final class MockPlannerStore: PlannerStore, @unchecked Sendable {
             isCompleted: false
         )
 
-        mutableSelf.state.tasks.append(task)
-        mutableSelf.emitChangeSynchronous()
+        self.state.tasks.append(task)
+        self.emitChangeSynchronous()
         return task
     }
 
     nonisolated private func updateTaskSynchronous(_ task: TaskItem) throws -> TaskItem {
-        let mutableSelf = self as! MockPlannerStore
-        mutableSelf.lock.lock()
-        defer { mutableSelf.lock.unlock() }
+        self.lock.lock()
+        defer { self.lock.unlock() }
 
-        guard let index = mutableSelf.state.tasks.firstIndex(where: { $0.id == task.id }) else {
+        guard let index = self.state.tasks.firstIndex(where: { $0.id == task.id }) else {
             throw PlannerError.notFound
         }
 
-        mutableSelf.state.tasks[index] = task
-        mutableSelf.emitChangeSynchronous()
+        self.state.tasks[index] = task
+        self.emitChangeSynchronous()
         return task
     }
 
     nonisolated private func deleteTaskSynchronous(_ task: TaskItem) throws {
-        let mutableSelf = self as! MockPlannerStore
-        mutableSelf.lock.lock()
-        defer { mutableSelf.lock.unlock() }
+        self.lock.lock()
+        defer { self.lock.unlock() }
 
-        guard mutableSelf.state.tasks.contains(where: { $0.id == task.id }) else {
+        guard self.state.tasks.contains(where: { $0.id == task.id }) else {
             throw PlannerError.notFound
         }
 
-        mutableSelf.state.tasks.removeAll { $0.id == task.id }
-        mutableSelf.emitChangeSynchronous()
+        self.state.tasks.removeAll { $0.id == task.id }
+        self.emitChangeSynchronous()
     }
 
     nonisolated private func emitChangeSynchronous() {
-        let mutableSelf = self as! MockPlannerStore
-        for continuation in mutableSelf.changesContinuations {
+        for continuation in self.changesContinuations {
             continuation.yield()
         }
     }
