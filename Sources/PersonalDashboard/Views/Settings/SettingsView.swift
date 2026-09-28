@@ -66,6 +66,18 @@ struct SettingsView: View {
                             .monospacedDigit()
                     }
                 }
+                HStack {
+                    Text("Il calendario parte dalle")
+                    Spacer()
+                    Stepper(value: $model.settings.gridStartHour, in: 0...20) {
+                        Text("\(model.settings.gridStartHour):00")
+                            .monospacedDigit()
+                    }
+                }
+                Toggle("Ricorda l'ultima posizione di scorrimento", isOn: $model.settings.rememberGridScroll)
+                    .onChange(of: model.settings.rememberGridScroll) { _, remember in
+                        if !remember { model.settings.lastGridScrollHour = nil }
+                    }
                 Picker("Aspetto", selection: $model.settings.appearance) {
                     Text("Sistema").tag(AppearancePreference.system)
                     Text("Chiaro").tag(AppearancePreference.light)
