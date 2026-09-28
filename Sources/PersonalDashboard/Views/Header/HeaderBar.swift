@@ -36,7 +36,7 @@ private struct DateSection: View {
         let dateStr = formatter.string(from: model.now)
         let firstLetter = dateStr.first.map(String.init).map { $0.uppercased() } ?? ""
         let rest = String(dateStr.dropFirst())
-        let weekNumber = model.calendar.component(.weekOfYear, from: model.now)
+        let weekNumber = Calendar(identifier: .iso8601).component(.weekOfYear, from: model.now)
         let year = model.calendar.component(.year, from: model.now)
 
         return VStack(alignment: .leading, spacing: 4) {
@@ -297,70 +297,51 @@ private struct SummarySection: View {
     var body: some View {
         let summary = model.summary
 
-        VStack(alignment: .leading, spacing: 6) {
-            // Evento corrente o prossimo
-            if let current = summary.current {
-                HStack(spacing: 4) {
-                    Text("In corso:")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundStyle(palette.now)
-                    Text(eventDisplayLine(current))
-                        .font(.system(size: 12))
-                        .lineLimit(1)
-                }
-            } else if let next = summary.next {
-                HStack(spacing: 4) {
-                    Text("Prossimo:")
-                        .font(.system(size: 12, weight: .semibold))
-                    Text(eventDisplayLine(next))
-                        .font(.system(size: 12))
-                        .lineLimit(1)
-                }
-            } else {
-                Text("Nessun altro evento oggi")
-                    .font(.system(size: 12))
-            }
+        HStack(spacing: 12) {
+            Image(systemName: "clock")
+                .font(.system(size: 15, weight: .medium))
+                .foregroundStyle(palette.now)
 
-            // Riga 2: evento dopo
-            if summary.current != nil, let next = summary.next {
-                Text("Poi: \(eventDisplayLine(next))")
-                    .font(.system(size: 12))
-                    .foregroundStyle(palette.tx2)
+            VStack(alignment: .leading, spacing: 2) {
+                primaryLine(summary)
+                    .font(.system(size: 13))
                     .lineLimit(1)
-            }
-
-            // Divisore e conteggi a destra
-            HStack(spacing: 12) {
-                Divider().overlay(palette.ui).frame(height: 24)
-
-                HStack(spacing: 4) {
-                    Text(countLabel("evento", count: summary.eventCount))
-                        .font(.system(size: 13, weight: .semibold))
-                    Text(countLabel("task da fare", count: summary.openTaskCount))
+                if summary.current != nil, let next = summary.next {
+                    Text("Poi: \(next.title) alle \(time(next.start))")
                         .font(.system(size: 12))
                         .foregroundStyle(palette.tx2)
+                        .lineLimit(1)
                 }
+            }
+
+            Rectangle().fill(palette.ui).frame(width: 1, height: 28)
+
+            VStack(alignment: .trailing, spacing: 2) {
+                Text(summary.eventCount == 1 ? "1 evento" : "\(summary.eventCount) eventi")
+                    .font(.system(size: 13, weight: .semibold))
+                Text("\(summary.openTaskCount) task da fare")
+                    .font(.system(size: 12))
+                    .foregroundStyle(palette.tx2)
             }
         }
         .padding(.vertical, 8)
         .padding(.horizontal, 14)
-        .background(palette.bg2)
-        .border(palette.ui, width: 1)
-        .cornerRadius(10)
+        .background(palette.bg2, in: RoundedRectangle(cornerRadius: 10))
+        .overlay(RoundedRectangle(cornerRadius: 10).stroke(palette.ui, lineWidth: 1))
     }
 
-    private func eventDisplayLine(_ event: CalendarEvent) -> String {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "it_IT")
-        formatter.dateFormat = "HH:mm"
-        let endTime = formatter.string(from: event.end)
-        return "\(event.title) · fino alle \(endTime)"
-    }
-
-    private func countLabel(_ label: String, count: Int) -> String {
-        if count == 1 {
-            return "1 " + label.replacingOccurrences(of: "i", with: "o").replacingOccurrences(of: "da fare", with: "da fare")
+    @ViewBuilder
+    private func primaryLine(_ summary: DaySummary) -> some View {
+        if let current = summary.current {
+            Text("\(Text("In corso:").fontWeight(.semibold).foregroundStyle(palette.now)) \(current.title) · fino alle \(time(current.end))")
+        } else if let next = summary.next {
+            Text("\(Text("Prossimo:").fontWeight(.semibold).foregroundStyle(palette.now)) \(next.title) alle \(time(next.start))")
+        } else {
+            Text("Nessun altro evento oggi")
         }
-        return "\(count) \(label)"
+    }
+
+    private func time(_ date: Date) -> String {
+        date.formatted(Date.FormatStyle(locale: Locale(identifier: "it_IT"), calendar: model.calendar, timeZone: model.calendar.timeZone).hour(.defaultDigits(amPM: .omitted)).minute())
     }
 }
